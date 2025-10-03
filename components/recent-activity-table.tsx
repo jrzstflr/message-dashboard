@@ -1,51 +1,53 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-
-const recentActivity = [
-  {
-    id: "MSG-1247",
-    time: "2 min ago",
-    action: "Blocked",
-    type: "Phishing",
-    sender: "suspicious@example.com",
-  },
-  {
-    id: "MSG-1246",
-    time: "5 min ago",
-    action: "Allowed",
-    type: "Business",
-    sender: "team@company.com",
-  },
-  {
-    id: "MSG-1245",
-    time: "8 min ago",
-    action: "Flagged",
-    type: "Spam",
-    sender: "marketing@promo.net",
-  },
-  {
-    id: "MSG-1244",
-    time: "12 min ago",
-    action: "Blocked",
-    type: "Malware",
-    sender: "noreply@malicious.ru",
-  },
-  {
-    id: "MSG-1243",
-    time: "15 min ago",
-    action: "Allowed",
-    type: "Internal",
-    sender: "admin@internal.com",
-  },
-]
+import { useMessages } from "@/components/messages-provider"
+import { useMemo } from "react"
 
 export function RecentActivityTable() {
+  const { messages: allMessages } = useMessages()
+
+  const recentActivity = useMemo(() => {
+    return allMessages
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 10)
+      .map((msg) => {
+        // Calculate relative time
+        const msgDate = new Date(msg.timestamp)
+        const now = new Date()
+        const diffMs = now.getTime() - msgDate.getTime()
+        const diffMins = Math.floor(diffMs / 60000)
+        const diffHours = Math.floor(diffMs / 3600000)
+        const diffDays = Math.floor(diffMs / 86400000)
+
+        let timeAgo = ""
+        if (diffDays > 0) {
+          timeAgo = `${diffDays} day${diffDays > 1 ? "s" : ""} ago`
+        } else if (diffHours > 0) {
+          timeAgo = `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`
+        } else if (diffMins > 0) {
+          timeAgo = `${diffMins} min${diffMins > 1 ? "s" : ""} ago`
+        } else {
+          timeAgo = "Just now"
+        }
+
+        return {
+          id: msg.id,
+          time: timeAgo,
+          action: msg.status,
+          type: msg.category,
+          sender: msg.senderEmail,
+        }
+      })
+  }, [allMessages])
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Recent Activity</CardTitle>
-        <CardDescription>Latest message filtering actions</CardDescription>
+        <CardDescription>Latest message filtering actions from uploaded data</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>

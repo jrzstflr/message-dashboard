@@ -4,10 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Download, Calendar } from "lucide-react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { ThreatTrendsChart } from "@/components/threat-trends-chart"
-import { ResponseTimeChart } from "@/components/response-time-chart"
-import { ComplianceMetricsChart } from "@/components/compliance-metrics-chart"
-import { GeographicDistributionChart } from "@/components/geographic-distribution-chart"
+import { ThreatTrendsChart } from "@/components/chart/threat-trends-chart"
+import { ResponseTimeChart } from "@/components/chart/response-time-chart"
+import { ComplianceMetricsChart } from "@/components/chart/compliance-metrics-chart"
+import { GeographicDistributionChart } from "@/components/chart/geographic-distribution-chart"
 
 export function AnalyticsContent() {
   return (
