@@ -26,6 +26,14 @@ export interface ProcessedMessage {
   roomType: string
   roomName: string
   fullMessage: string
+
+  // ✅ Added for compatibility with MessagesContent modal + recipient display
+  author_user_name?: string
+  author_user_email?: string
+  room_members?: Array<{
+    room_member_id: string
+    room_member_name: string
+  }>
 }
 
 function categorizeMessage(message: RawMessage): {
@@ -91,7 +99,10 @@ export function processMessage(rawMessage: RawMessage, index: number): Processed
   const { category, risk, status } = categorizeMessage(rawMessage)
 
   // Create a subject line from the first 50 chars of message
-  const subject = rawMessage.message.length > 50 ? rawMessage.message.substring(0, 50) + "..." : rawMessage.message
+  const subject =
+    rawMessage.message.length > 50
+      ? rawMessage.message.substring(0, 50) + "..."
+      : rawMessage.message
 
   // Format timestamp
   const date = new Date(rawMessage.ts_iso)
@@ -117,6 +128,11 @@ export function processMessage(rawMessage: RawMessage, index: number): Processed
     roomType: rawMessage.room_type,
     roomName: rawMessage.room_name,
     fullMessage: rawMessage.message,
+
+    // ✅ Pass through original JSON fields for modal and audit
+    author_user_name: rawMessage.author_user_name,
+    author_user_email: rawMessage.author_user_email,
+    room_members: rawMessage.room_members,
   }
 }
 
@@ -126,7 +142,8 @@ export function calculateStats(messages: ProcessedMessage[]) {
   const flagged = messages.filter((m) => m.status === "Flagged").length
   const allowed = messages.filter((m) => m.status === "Allowed").length
 
-  const accuracy = total > 0 ? (((allowed + filtered) / total) * 100).toFixed(1) : "0.0"
+  const accuracy =
+    total > 0 ? (((allowed + filtered) / total) * 100).toFixed(1) : "0.0"
 
   // Category breakdown
   const categories = messages.reduce(
@@ -134,7 +151,7 @@ export function calculateStats(messages: ProcessedMessage[]) {
       acc[msg.category] = (acc[msg.category] || 0) + 1
       return acc
     },
-    {} as Record<string, number>,
+    {} as Record<string, number>
   )
 
   // Risk breakdown
@@ -143,7 +160,7 @@ export function calculateStats(messages: ProcessedMessage[]) {
       acc[msg.risk] = (acc[msg.risk] || 0) + 1
       return acc
     },
-    {} as Record<string, number>,
+    {} as Record<string, number>
   )
 
   return {
