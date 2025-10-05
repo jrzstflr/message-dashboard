@@ -11,6 +11,13 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useMessages } from "@/components/messages-provider"
 import { FileUpload } from "@/components/file-upload"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 
 export function MessagesContent() {
   const { messages: allMessages, isLoaded } = useMessages()
@@ -19,6 +26,8 @@ export function MessagesContent() {
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
+  const [selectedMessage, setSelectedMessage] = useState<any | null>(null)
+
   const messagesPerPage = 50
 
   const filteredMessages = useMemo(() => {
@@ -187,7 +196,7 @@ export function MessagesContent() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" onClick={() => setSelectedMessage(message)}>
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="icon">
@@ -230,6 +239,30 @@ export function MessagesContent() {
           </>
         )}
       </div>
+
+      {/* Message Viewer Modal */}
+      <Dialog open={!!selectedMessage} onOpenChange={() => setSelectedMessage(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedMessage?.subject || "Message Details"}</DialogTitle>
+            <DialogDescription>
+              {selectedMessage ? (
+                <div className="space-y-2 mt-2">
+                  <p><strong>From:</strong> {selectedMessage.sender} ({selectedMessage.senderEmail})</p>
+                  <p><strong>Timestamp:</strong> {selectedMessage.timestamp}</p>
+                  <p><strong>Category:</strong> {selectedMessage.category}</p>
+                  <p><strong>Status:</strong> {selectedMessage.status}</p>
+                  <p><strong>Risk:</strong> {selectedMessage.risk}</p>
+                  <hr className="my-3" />
+                  <p>{selectedMessage.content || "No message body available."}</p>
+                </div>
+              ) : (
+                <p>No message selected.</p>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
