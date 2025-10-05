@@ -1,21 +1,7 @@
 "use client"
 
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 const data = [
   { time: "00:00", messages: 2400 },
@@ -32,9 +18,7 @@ export function MessageVolumeChart() {
     <Card>
       <CardHeader>
         <CardTitle>Message Volume</CardTitle>
-        <CardDescription>
-          Messages processed over the last 24 hours
-        </CardDescription>
+        <CardDescription>Messages processed over the last 24 hours</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-[300px] w-full">
@@ -50,13 +34,7 @@ export function MessageVolumeChart() {
               <XAxis dataKey="time" tickLine={false} axisLine={false} />
               <YAxis tickLine={false} axisLine={false} />
               <Tooltip />
-              <Area
-                type="monotone"
-                dataKey="messages"
-                stroke="#4f46e5"
-                fill="url(#fillMessages)"
-                strokeWidth={2}
-              />
+              <Area type="monotone" dataKey="messages" stroke="#4f46e5" fill="url(#fillMessages)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, type ReactNode } from "react"
-import { processMessage, calculateStats, type RawMessage, type ProcessedMessage } from "../lib/message-utils"
+import { processMessage, calculateStats, type RawMessage, type ProcessedMessage } from "@/lib/message-utils"
 
 interface MessagesContextType {
   messages: ProcessedMessage[]

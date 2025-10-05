@@ -28,7 +28,6 @@ export interface ProcessedMessage {
   fullMessage: string
 }
 
-// Categorize message based on content and metadata
 function categorizeMessage(message: RawMessage): {
   category: string
   risk: string
@@ -88,7 +87,6 @@ function categorizeMessage(message: RawMessage): {
   return { category: "Uncategorized", risk: "Medium", status: "Flagged" }
 }
 
-// Transform raw message to processed format
 export function processMessage(rawMessage: RawMessage, index: number): ProcessedMessage {
   const { category, risk, status } = categorizeMessage(rawMessage)
 
@@ -122,7 +120,6 @@ export function processMessage(rawMessage: RawMessage, index: number): Processed
   }
 }
 
-// Calculate statistics from messages
 export function calculateStats(messages: ProcessedMessage[]) {
   const total = messages.length
   const filtered = messages.filter((m) => m.status === "Blocked").length

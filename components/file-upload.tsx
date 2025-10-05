@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Upload, FileJson, AlertCircle, CheckCircle2, X } from "lucide-react"
 import { useMessages } from "@/components/messages-provider"
-import { Alert, AlertDescription } from "../components/ui/alert"
-import type { RawMessage } from "../lib/message-utils"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import type { RawMessage } from "@/lib/message-utils"
 
 export function FileUpload() {
   const { uploadMessages, clearMessages, isLoaded, messages } = useMessages()
@@ -21,6 +21,10 @@ export function FileUpload() {
       setIsProcessing(true)
 
       try {
+        if (!file) {
+          throw new Error("No file provided")
+        }
+
         // Validate file type
         if (!file.name.toLowerCase().endsWith(".json")) {
           throw new Error("Please upload a JSON file")
@@ -39,19 +43,37 @@ export function FileUpload() {
           throw new Error("JSON file is empty")
         }
 
-        // Validate first message has required fields
         const firstMsg = data[0]
-        const requiredFields = ["author_user_email", "author_user_name", "message", "ts_iso"]
 
-        const missingOrInvalidFields = requiredFields.filter((field) => {
+        // Check string fields
+        const stringFields = [
+          "author_user_email",
+          "author_user_name",
+          "message",
+          "ts_iso",
+          "author_user_id",
+          "room_id",
+          "room_name",
+          "room_type",
+        ]
+
+        const missingStringFields = stringFields.filter((field) => {
           const value = firstMsg[field]
           return typeof value !== "string" || value.trim() === ""
         })
 
-        if (missingOrInvalidFields.length > 0) {
-          throw new Error(
-            `Missing or invalid fields: ${missingOrInvalidFields.join(", ")}`
-          )
+        if (missingStringFields.length > 0) {
+          throw new Error(`Missing or invalid string fields: ${missingStringFields.join(", ")}`)
+        }
+
+        // Check numeric timestamp field
+        if (typeof firstMsg.ts !== "number") {
+          throw new Error("Missing or invalid field: ts (must be a number)")
+        }
+
+        // Check room_members array
+        if (!Array.isArray(firstMsg.room_members)) {
+          throw new Error("Missing or invalid field: room_members (must be an array)")
         }
 
         // Upload messages
@@ -133,11 +155,7 @@ export function FileUpload() {
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          className={`
-            relative flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed p-12 transition-colors
-            ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"}
-            ${isProcessing ? "opacity-50 pointer-events-none" : "cursor-pointer hover:border-primary/50"}
-          `}
+          className={`relative flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed p-12 transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"} ${isProcessing ? "opacity-50 pointer-events-none" : "cursor-pointer hover:border-primary/50"}`}
         >
           <input
             type="file"
@@ -178,16 +196,18 @@ export function FileUpload() {
         <div className="mt-6 space-y-2 text-sm text-muted-foreground">
           <p className="font-semibold">Expected JSON format:</p>
           <pre className="rounded-lg bg-muted p-3 text-xs overflow-x-auto">
-            {`[
-  {
-    "author_user_email": "user@example.com",
-    "author_user_name": "John Doe",
-    "message": "Message content...",
-    "room_name": "Room name",
-    "room_type": "direct",
-    "ts_iso": "2024-01-01T12:00:00Z"
-  }
-]`}
+            {`[{
+  "author_user_email": "user@example.com",
+  "author_user_id": "user123",
+  "author_user_name": "John Doe",
+  "message": "Message content...",
+  "room_id": "room123",
+  "room_members": [{"room_member_id": "user123", "room_member_name": "John Doe"}],
+  "room_name": "Room name",
+  "room_type": "direct",
+  "ts": 1704110400000,
+  "ts_iso": "2024-01-01T12:00:00Z"
+}]`}
           </pre>
         </div>
       </CardContent>
