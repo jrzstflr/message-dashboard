@@ -6,12 +6,17 @@ import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/components/theme-provider"
 import { MessagesProvider } from "@/components/messages-provider"
 import { Suspense } from "react"
+import jrzlogo from "../public/jrzlogo.svg"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "MessageFilter Pro - Advanced Message Filtering & Auditing",
-  description: "Enterprise-grade message filtering, analytics, and compliance auditing platform",
+  title: "Jrz Dev | Dashboard and Audit Management",
+  description:
+    "Enterprise-grade message filtering, analytics, and compliance auditing platform",
   generator: "v0.app",
+  icons: {
+    icon: "/jrzlogo.svg", // ✅ points to your favicon in /public
+  },
 }
 
 export default function RootLayout({
@@ -21,9 +26,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}>
+      <body
+        suppressHydrationWarning
+        className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}
+      >
         <Suspense fallback={null}>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
             <MessagesProvider>{children}</MessagesProvider>
           </ThemeProvider>
         </Suspense>

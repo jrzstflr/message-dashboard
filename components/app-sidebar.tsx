@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, MessageSquare, BarChart3, FileText, Filter, Settings, Shield } from "lucide-react"
+import { LayoutDashboard, MessageSquare, BarChart3, FileText, Filter, Settings } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -45,30 +46,32 @@ const mainItems = [
   },
 ]
 
-const settingsItems = [
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-  },
-]
-
 export function AppSidebar() {
   const pathname = usePathname()
 
   return (
     <Sidebar>
+      {/* --- HEADER --- */}
       <SidebarHeader className="border-b border-sidebar-border px-6 py-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Shield className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden">
+            <Image
+              src="/jrz_logo_v2.png"
+              alt="App Logo"
+              width={32}
+              height={32}
+              className="object-cover"
+              priority
+            />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">MessageFilter Pro</span>
-            <span className="text-xs text-muted-foreground">Enterprise Edition</span>
+            <span className="text-sm font-semibold">Dashboard and Audit Management</span>
+            <span className="text-xs text-muted-foreground">Professional Edition</span>
           </div>
         </div>
       </SidebarHeader>
+
+      {/* --- MAIN CONTENT --- */}
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Main</SidebarGroupLabel>
@@ -94,28 +97,13 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>System</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {settingsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
+
+      {/* --- FOOTER --- */}
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="text-xs text-muted-foreground">
-          <div>Version 2.0.0</div>
-          <div className="mt-1">© 2025 MessageFilter Pro</div>
+          <div>Version 1.0.0</div>
+          <div className="mt-1">© 2025 Jrz Dev | Dashboard and Filter Pro</div>
         </div>
       </SidebarFooter>
     </Sidebar>
