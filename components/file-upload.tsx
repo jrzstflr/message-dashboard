@@ -1,142 +1,108 @@
+// components/file-upload.tsx
 "use client"
 
 import type React from "react"
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
+import { z } from "zod"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, FileJson, AlertCircle, CheckCircle2, X } from "lucide-react"
+import { Upload, FileJson, AlertCircle, CheckCircle2, X, Loader2 } from "lucide-react"
 import { useMessages } from "@/components/messages-provider"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import type { RawMessage } from "@/lib/message-utils"
+import { RawMessageSchema, type RawMessage } from "@/lib/message-utils"
 
 export function FileUpload() {
   const { uploadMessages, clearMessages, isLoaded, messages } = useMessages()
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const workerRef = useRef<Worker | null>(null)
+
+  // Initialize background worker thread safely on mount
+  useEffect(() => {
+    workerRef.current = new Worker("/workers/json-parser.worker.js")
+    return () => workerRef.current?.terminate()
+  }, [])
 
   const handleFile = useCallback(
     async (file: File) => {
+      if (!file) return
       setError(null)
       setIsProcessing(true)
 
+      if (!file.name.toLowerCase().endsWith(".json")) {
+        setError("Invalid file extension. Please drop a verified .json file.")
+        setIsProcessing(false)
+        return
+      }
+
       try {
-        if (!file) {
-          throw new Error("No file provided")
-        }
-
-        // Validate file type
-        if (!file.name.toLowerCase().endsWith(".json")) {
-          throw new Error("Please upload a JSON file")
-        }
-
-        // Read file
         const text = await file.text()
-        const data = JSON.parse(text)
 
-        // Validate data structure
-        if (!Array.isArray(data)) {
-          throw new Error("JSON file must contain an array of messages")
+        if (!workerRef.current) {
+          throw new Error("Worker thread failed to initialize.")
         }
 
-        if (data.length === 0) {
-          throw new Error("JSON file is empty")
+        // Send text to background thread
+        workerRef.current.postMessage({ text })
+
+        // Listen for parsed response from worker thread
+        workerRef.current.onmessage = (e) => {
+          const { success, data, error: workerError } = e.data
+
+          if (!success) {
+            setError(`JSON Structure Error: ${workerError}`)
+            setIsProcessing(false)
+            return
+          }
+
+          // Validate structural mapping with Zod
+          const ArraySchema = z.array(RawMessageSchema)
+          const validationResult = ArraySchema.safeParse(data)
+
+          if (!validationResult.success) {
+            const firstError = validationResult.error.errors[0]
+            setError(`Data mismatch at path [${firstError.path.join(".")}]: ${firstError.message}`)
+            setIsProcessing(false)
+            return
+          }
+
+          uploadMessages(validationResult.data as RawMessage[])
+          setIsProcessing(false)
         }
-
-        const firstMsg = data[0]
-
-        // Check string fields
-        const stringFields = [
-          "author_user_email",
-          "author_user_name",
-          "message",
-          "ts_iso",
-          "author_user_id",
-          "room_id",
-          "room_name",
-          "room_type",
-        ]
-
-        const missingStringFields = stringFields.filter((field) => {
-          const value = firstMsg[field]
-          return typeof value !== "string" || value.trim() === ""
-        })
-
-        if (missingStringFields.length > 0) {
-          throw new Error(`Missing or invalid string fields: ${missingStringFields.join(", ")}`)
-        }
-
-        // Check numeric timestamp field
-        if (typeof firstMsg.ts !== "number") {
-          throw new Error("Missing or invalid field: ts (must be a number)")
-        }
-
-        // Check room_members array
-        if (!Array.isArray(firstMsg.room_members)) {
-          throw new Error("Missing or invalid field: room_members (must be an array)")
-        }
-
-        // Upload messages
-        uploadMessages(data as RawMessage[])
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to process file")
-      } finally {
+        setError(err instanceof Error ? err.message : "Failed to delegate file parsing.")
         setIsProcessing(false)
       }
     },
     [uploadMessages],
   )
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault()
-      setIsDragging(false)
-
-      const file = e.dataTransfer.files?.[0]
-      if (file) {
-        handleFile(file)
-      }
-    },
-    [handleFile],
-  )
-
-  const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      if (file) {
-        handleFile(file)
-      }
-    },
-    [handleFile],
-  )
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }, [])
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-  }, [])
+    const file = e.dataTransfer.files?.[0]
+    if (file) handleFile(file)
+  }, [handleFile])
 
   if (isLoaded) {
     return (
-      <Card>
-        <CardHeader>
+      <Card className="border-emerald-500/20 bg-emerald-500/5 shadow-sm">
+        <CardHeader className="py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                Data Loaded Successfully
-              </CardTitle>
-              <CardDescription>
-                {messages.length.toLocaleString()} messages processed and ready for analysis
-              </CardDescription>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-base font-semibold">Audit Records Loaded</CardTitle>
+                <CardDescription className="text-xs text-emerald-700/80">
+                  {messages.length.toLocaleString()} diagnostic logs processed successfully.
+                </CardDescription>
+              </div>
             </div>
-            <Button variant="outline" size="sm" onClick={clearMessages}>
-              <X className="mr-2 h-4 w-4" />
-              Clear Data
+            <Button variant="ghost" size="sm" onClick={clearMessages} className="text-muted-foreground hover:text-destructive">
+              <X className="mr-1.5 h-4 w-4" /> Clear Audit
             </Button>
           </div>
         </CardHeader>
@@ -145,71 +111,44 @@ export function FileUpload() {
   }
 
   return (
-    <Card>
+    <Card className="shadow-sm border-muted/60">
       <CardHeader>
-        <CardTitle>Upload Message Data</CardTitle>
-        <CardDescription>Upload your data.json file to begin analyzing messages</CardDescription>
+        <CardTitle className="text-lg font-bold tracking-tight">Console Log Integration</CardTitle>
+        <CardDescription>Upload exported administrative log batches to compile message maps.</CardDescription>
       </CardHeader>
       <CardContent>
         <div
           onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          className={`relative flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed p-12 transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"} ${isProcessing ? "opacity-50 pointer-events-none" : "cursor-pointer hover:border-primary/50"}`}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+          onDragLeave={(e) => { e.preventDefault(); setIsDragging(false) }}
+          className={`relative flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-10 transition-all ${
+            isDragging ? "border-primary bg-primary/5 scale-[0.99]" : "border-muted-foreground/25 bg-muted/20"
+          } ${isProcessing ? "opacity-60 pointer-events-none" : "cursor-pointer hover:bg-muted/40 hover:border-muted-foreground/40"}`}
         >
           <input
             type="file"
             accept=".json"
-            onChange={handleFileInput}
+            onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFile(file) }}
             className="absolute inset-0 cursor-pointer opacity-0"
             disabled={isProcessing}
           />
 
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            {isProcessing ? (
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            ) : (
-              <FileJson className="h-8 w-8 text-primary" />
-            )}
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-background border shadow-sm text-primary">
+            {isProcessing ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <FileJson className="h-6 w-6" />}
           </div>
 
           <div className="text-center">
-            <p className="text-lg font-semibold">
-              {isProcessing ? "Processing file..." : "Drop your data.json file here"}
-            </p>
-            <p className="text-sm text-muted-foreground">or click to browse</p>
+            <p className="text-sm font-semibold tracking-tight">{isProcessing ? "Processing Stream Off-Thread..." : "Drop audit data.json file here"}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Max batch scale recommendation: ~50MB</p>
           </div>
-
-          <Button variant="secondary" disabled={isProcessing}>
-            <Upload className="mr-2 h-4 w-4" />
-            Select File
-          </Button>
         </div>
 
         {error && (
-          <Alert variant="destructive" className="mt-4">
+          <Alert variant="destructive" className="mt-4 py-3">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription className="text-xs font-mono">{error}</AlertDescription>
           </Alert>
         )}
-
-        <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-          <p className="font-semibold">Expected JSON format:</p>
-          <pre className="rounded-lg bg-muted p-3 text-xs overflow-x-auto">
-            {`[{
-  "author_user_email": "user@example.com",
-  "author_user_id": "user123",
-  "author_user_name": "John Doe",
-  "message": "Message content...",
-  "room_id": "room123",
-  "room_members": [{"room_member_id": "user123", "room_member_name": "John Doe"}],
-  "room_name": "Room name",
-  "room_type": "direct",
-  "ts": 1704110400000,
-  "ts_iso": "2024-01-01T12:00:00Z"
-}]`}
-          </pre>
-        </div>
       </CardContent>
     </Card>
   )

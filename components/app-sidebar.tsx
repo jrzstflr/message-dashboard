@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, MessageSquare, BarChart3, FileText, Filter, Settings } from "lucide-react"
+import { LayoutDashboard, MessageSquare, BarChart3, Filter } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -33,11 +33,6 @@ const mainItems = [
     title: "Analytics",
     url: "/analytics",
     icon: BarChart3,
-  },
-  {
-    title: "Audit Log",
-    url: "/audit-log",
-    icon: FileText,
   },
   {
     title: "Filters & Rules",

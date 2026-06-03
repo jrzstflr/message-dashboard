@@ -1,13 +1,16 @@
+// app/messages/page.tsx
+"use client"
+
+import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { MessagesContent } from "@/components/messages-content"
-import { SidebarProvider } from "@/components/ui/sidebar"
 
 export default function MessagesPage() {
   return (
-    <SidebarProvider defaultOpen>
-      <div className="flex min-h-screen w-full">
+    <SidebarProvider>
+      <div className="flex h-screen w-screen overflow-hidden bg-background">
         <AppSidebar />
-        <main className="flex-1">
+        <main className="flex-1 min-w-0 h-full overflow-hidden relative">
           <MessagesContent />
         </main>
       </div>
